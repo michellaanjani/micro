@@ -14,7 +14,7 @@
       <div class="col-md-3">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">Welcome, {{ Auth::user()->name }}</h5>
+            <h5 class="card-title">Welcome, {{ currentUser('username') ?? 'Guest' }}</h5>
             <p class="card-text">Your account dashboard</p>
             <a href="{{ route('account') }}" class="btn btn-primary">Go to Account</a>
           </div>

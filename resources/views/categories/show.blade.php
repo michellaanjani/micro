@@ -1,19 +1,30 @@
 @extends('admin')
 
-@section('title', 'Semua Produk')
+@section('title', 'Kategori ' . ($category['name'] ?? 'Kategori Tidak Ditemukan'))
 
 @section('content')
 <div class="container py-4">
-  <div class="row">
-    <div class="col-md-12">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="fas fa-boxes me-2"></i>Semua Produk</h2>
-        <a href="{{ route('products.create') }}" class="btn btn-primary">
-          <i class="fas fa-plus me-1"></i>Tambah Produk
-        </a>
-      </div>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2><i class="fas fa-boxes me-2"></i>{{ $category['name'] ?? 'Kategori Tidak Ditemukan' }}</h2>
+    </div>
+    <div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+        <i class="fas fa-edit me-2"></i>Edit Kategori
+      </button>
+      <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+        <i class="fas fa-trash me-2"></i>Hapus Kategori
+      </button>
+    </div>
+  </div>
 
-      <div class="card border-0 shadow-sm">
+  @isset($category['description'])
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted">{{ $category['description'] }}</p>
+  </div>
+  @endisset
+
+  <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" id="productTable">
@@ -153,19 +164,18 @@
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+<!-- Tambahkan library ini -->
+{{-- <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.copy.min.js"></script> --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
 
 <script>
 $(document).ready(function() {
     // Initialize DataTables only if table has data
     if ($('#productTable tbody tr').not('.empty-row').length > 0) {
         $('#productTable').DataTable({
-            order: [[0, 'asc']], // Default sort by Product ID
-            pageLength: 10, // Show 10 entries by default
-            lengthMenu: [10, 25, 50, 100], // Entries per page options
+            order: [[6, 'asc']], // Default sort by stock
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json',
                 search: "_INPUT_",
@@ -183,37 +193,29 @@ $(document).ready(function() {
                     text: '<i class="fas fa-file-excel me-2"></i> Excel',
                     className: 'btn btn-success btn-sm',
                     exportOptions: {
-                        columns: [0, 1, 3, 4, 5, 6, 7], // ID Produk, ID Varian, Nama Produk, Varian, Harga, Diskon, Stok
+                        columns: [0, 2, 3, 4, 5],
                         format: {
-                            body: function (data, row, column, node) {
+                            body: function(data, row, column, node) {
                                 const $node = $(node);
-                                const html = $node.html() || '';
+                                const rawHtml = $node.html() || '';
 
-                                // Fungsi untuk menghapus semua tag HTML dan ambil teks bersih
-                                const cleanText = html
-                                    .replace(/<[^>]*>/g, '')     // Hapus semua tag HTML
-                                    .replace(/\s+/g, ' ')         // Normalisasi spasi
-                                    .trim();
-
-                                // Khusus kolom 4 (Harga) & 5 (Diskon): ambil angka dari teks
-                                if (column === 4 || column === 5) {
-                                    const angka = cleanText.replace(/[^\d]/g, '');
-                                    return angka ? parseInt(angka) : '-';
+                                // Bersihkan semua tag HTML
+                                const cleanText = rawHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                                // Kolom ID (index 0): hilangkan tanda '#'
+                                if (column === 0) {
+                                    return cleanText.replace(/^#/, '');
+                                }
+                                // Kolom Harga Normal (index 3) dan Diskon (index 4)
+                                if (column === 3 || column === 4) {
+                                    const numeric = cleanText.replace(/[^\d]/g, '');
+                                    return numeric ? parseInt(numeric) : '-';
                                 }
 
-                                // Kolom 6: Stok → ubah "Habis" jadi 0
-                                if (column === 6) {
-                                    if (cleanText.toLowerCase().includes('habis')) return 0;
-                                    const stok = cleanText.replace(/[^\d]/g, '');
-                                    return stok ? parseInt(stok) : 0;
-                                }
-
-                                // Kolom Varian (index 4) → jika "-" badge, tetap "-"
-                                if (column === 3 && (cleanText === '-' || cleanText === '')) {
+                                // Kolom Varian (index 2) → jika "-" badge, ubah ke "-"
+                                if (column === 2 && (cleanText === '-' || cleanText === '')) {
                                     return '-';
                                 }
 
-                                // Default → teks bersih
                                 return cleanText;
                             }
                         }
@@ -225,11 +227,11 @@ $(document).ready(function() {
                     text: '<i class="fas fa-print me-2"></i> Print',
                     className: 'btn btn-info btn-sm',
                     exportOptions: {
-                        columns: [0, 1, 3, 4, 5, 6, 7]
+                        columns: [0, 2, 3, 4, 5]
                     },
                     customize: function(win) {
                         $(win.document.body).find('table').addClass('table-bordered');
-                        $(win.document.body).find('h1').css('text-align','center').text('Daftar Produk');
+                        $(win.document.body).find('h1').css('text-align','center');
                     }
                 },
                 // {
@@ -237,30 +239,30 @@ $(document).ready(function() {
                 //     text: '<i class="fas fa-copy me-2"></i> Salin',
                 //     className: 'btn btn-dark btn-sm',
                 //     exportOptions: {
-                //         columns: [0, 1, 3, 4, 5, 6, 7]
+                //         columns: [0, 2, 3, 4, 5, 6]
                 //     }
                 // }
             ],
             columnDefs: [
                 {
                     orderable: true,
-                    targets: [0, 1, 3, 4, 5, 6, 7]
+                    targets: [0, 2, 3, 4, 5, 6]
                 },
                 {
                     orderable: false,
-                    targets: [2, 8]
+                    targets: [1]
                 },
                 {
                     className: 'text-center',
-                    targets: [0, 1, 2, 7, 8]
+                    targets: [0, 1, 6]
                 },
                 {
                     className: 'text-end',
-                    targets: [5, 6]
+                    targets: [4, 5]
                 },
                 {
                     type: 'num',
-                    targets: [5, 6],
+                    targets: [4, 5],
                     render: function(data, type, row) {
                         if (type === 'sort') {
                             return data.replace('Rp', '').replace(/\./g, '');
@@ -277,7 +279,6 @@ $(document).ready(function() {
             initComplete: function() {
                 $('.dataTables_filter input').addClass('form-control form-control-sm');
                 $('.dataTables_length select').addClass('form-select form-select-sm');
-                $('.dt-buttons button').removeClass('btn-secondary').addClass('btn-sm');
             }
         });
     }

@@ -12,7 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'check.login' => \App\Http\Middleware\CheckSessionLogin::class,
+            'check.token' => \App\Http\Middleware\CheckTokenExpiry::class,
+            'check.role' => \App\Http\Middleware\CheckRole::class,
+            //check di app/Http/Middleware/..
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
