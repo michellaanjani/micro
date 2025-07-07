@@ -23,7 +23,7 @@ class CategoryController extends Controller
 
         return view('categories.index', compact('categories'));
     }
-    public function show($id)
+        public function show($id)
     {
         $categoryRes = Http::timeout(10)->get("{$this->baseUrl}/categories");
 
@@ -40,21 +40,18 @@ class CategoryController extends Controller
             return redirect()->route('categories.index');
         }
 
+        $products = [];
         $productRes = Http::timeout(10)->get("{$this->baseUrl}/products/{$id}");
 
-        if (!$productRes->successful()) {
-            Session::flash('warning', 'Gagal mengambil produk untuk kategori ini.');
-            $products = [];
-        } else {
+        if ($productRes->successful()) {
             $products = $productRes->json()['data'] ?? [];
-
-            if (empty($products)) {
-                Session::flash('info', 'Kategori ini belum memiliki produk.');
-            }
+        } else {
+            Session::flash('warning', 'Gagal mengambil produk untuk kategori ini.');
         }
 
         return view('categories.show', compact('category', 'products'));
     }
+
 
 
     // public function show($id)
