@@ -80,7 +80,7 @@
                       <small class="text-muted">{{ \Carbon\Carbon::parse($order['created_at'])->format('H:i') }}</small>
                     </td>
                     <td class="text-center">
-                      <a href="/orders/{{ $order['id'] }}" class="btn btn-sm btn-outline-primary" title="Detail">
+                      <a href="{{ route('orders.showemployee', ['id' => $order['id']]) }}" class="btn btn-sm btn-outline-primary" title="Detail">
                         <i class="fas fa-eye"></i>
                       </a>
                     </td>
